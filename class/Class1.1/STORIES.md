@@ -5,6 +5,7 @@
     - 2. List of numbers in program should be numerical-type and contain only numerical-typed values (e.g ints, floats).
     - 3. User should be able to choose the meaning of 'biggest' before computing, means that either return closest value to 0, or return largest absolute value.
     - 4. User should be prompted that there is ability to choose meaning of 'biggest' before choosing it.
+    - 5. Program should print and exit if there are no negative values given.
 
 ### As a cool mathematician I want to be able to get roots of the quadratic equation ax^2 + bx + c. It will allow me to avoid hard calculations related to determinant.
 
