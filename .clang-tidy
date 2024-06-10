@@ -1,0 +1,4 @@
+Checks: 'google-*,bugprone-*,cppcoreguidelines-*,modernize-*,performance-*,readability-*,portability-*,llvm-*,clang-analyzer-*,hicpp-*,misc-*'
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle: none
