@@ -2,5 +2,6 @@
 
 auto Triangle::get_area() -> double
 {
-    return a * b * c;
+    double s = (a + b + c) / 2.0;
+    return std::sqrt(s * (s - a) * (s - b) * (s - c));
 }
