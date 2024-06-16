@@ -57,5 +57,17 @@ auto main() -> int
         ASSERT_NEQ(std::get<0>(result), 0)
     });
 
+    testSuite.addTest("R component incorrect",
+    [](){
+        // Build:
+        RGB rgb(0,100,100);
+
+        // Operate:
+        auto result = rgb.get_magic_color();
+
+        // Check:
+        ASSERT_NEQ(result, std::make_tuple(255,198,100))
+    });
+
     testSuite.run();
 }
