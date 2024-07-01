@@ -98,7 +98,7 @@ main: (args) -> int = {
         return 0;
     }
 
-    std::cout << "Hello again(x{" << occurences + 1 << "}), " << name << "!" << std::endl;
+    std::cout << "Hello again(x" << occurences + 1 << "), " << name << std::endl;
     _ : int = save_user(name);
 
     return 0;

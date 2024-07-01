@@ -29,6 +29,18 @@ auto save_user(std::string name) -> void
     return;
 }
 
+auto load_users() -> std::string 
+{
+    std::string users = "";
+    std::ifstream file("./local_files/users.txt");
+    if (!file.is_open()) { return users; }
+    
+    file >> users;
+    file.close();
+
+    return users;
+}
+
 auto main(int argc, char* argv[]) -> int
 {
     if (argc < 2 || argc > 3)
@@ -48,25 +60,13 @@ auto main(int argc, char* argv[]) -> int
         }
     }
 
-    auto load_users = []() -> std::string 
-    {
-        std::string users = "";
-        std::ifstream file("./local_files/users.txt");
-        if (!file.is_open()) { return users; }
-        
-        file >> users;
-        file.close();
-
-        return users;
-    };
-
     std::string users = load_users();
-    std::string name = argv[1];
+    std::string name = std::string(argv[1]);
 
     if (name == "bread" && option != "")
     {
         write_file("");
-        std::println("Successfully deleted all users.")
+        std::println("Successfully deleted all users.");
         return 0;
     }
 
