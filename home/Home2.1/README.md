@@ -6,3 +6,5 @@
 - ```clang++ main.cpp -std=c++20 -I<YOUR_CPPFRONT_INCLUDE_PATH> -o ./build/main```
 
 Remark about warnings compiler shows - they are related to how cppfront translates cpp2 to cpp. (double parentheses)
+
+And additional remark about struct (class) -> class (home) transition, there is some issues with struct initialization docs of cppfront, so lets pretend it serves the same purpose - encapsulation of users stats.

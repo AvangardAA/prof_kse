@@ -1,105 +1,140 @@
-write_file: (content: std::string) -> void = {
-    file_o: std::ofstream = ("./local_files/users.txt");
-    file_o << content;
-    file_o.close();
-}
+name_option: type == std::pair<std::string, std::string>;
 
-save_user: (name: std::string) -> int = {
-    file: std::ifstream = ("./local_files/users.txt");
-    if (!file.is_open()) 
-    { 
-        write_file(name + ",");
+delimiter: std::string_view == (",");
+delete_cmd: std::string_view == ("delete");
+bread_key: std::string_view == ("bread");
+clear_file: std::string_view == ("");
+
+UserStatistics: type = {
+    filename: std::string;
+
+    load_users: (this) -> std::string = {
+        users: std::string = ();
+        file: std::ifstream = (this.filename);
+        if (!file.is_open()) { return users; }
+
+        file >> users;
+        file.close();
+
+        return users;
+    }
+
+    write_file: (this, content: std::string) -> void = {
+        file_o: std::ofstream = (this.filename);
+        file_o << content;
+        file_o.close();
+    }
+
+    save_user: (this, name: std::string) -> int = {
+        file: std::ifstream = (this.filename);
+        if (!file.is_open()) 
+        { 
+            write_file(name + std::string(delimiter));
+            return 0;
+        }
+        
+        users_line: std::string = ();
+        std::getline(file, users_line);
+        file.close();
+
+        users_line += name + std::string(delimiter);
+        write_file(users_line);
+
         return 0;
     }
-    
-    users_line: std::string = ();
-    std::getline(file, users_line);
-    file.close();
 
-    users_line += name + ",";
-    write_file(users_line);
-
-    return 0;
+    operator=: (out this, fname: std::string) = {
+        this.filename = fname;
+    }
 }
 
-load_users: () -> std::string = {
-    users: std::string = ();
-    file: std::ifstream = ("./local_files/users.txt");
-    if (!file.is_open()) { return users; }
-    
-    file >> users;
-    file.close();
-
-    return users;
-}
-
-main: (args) -> int = {
+validate_input: (args) -> std::optional<name_option> = {
     if (args.argc < 2 || args.argc > 3)
     {
         std::cout << "Unsupported number of args" << std::endl;
-        return 1;
+        exit(1);
     }
 
-    option: std::string = ();
+    name: std::string = (args.argv[1]);
     if (args.argc == 3)
     {
-        option = std::string(args.argv[2]);
-        if (option != "delete")
+        option := std::string(args.argv[2]);
+        if (option != delete_cmd)
         {
             std::cout << "Unsupported second argument. Support only: 'delete'." << std::endl;
-            return 1;
+            exit(1);
         }
+
+        return name_option(name, option);
     }
 
-    users := load_users();
-    name: std::string = args.argv[1];
+    return std::nullopt;
+}
 
-    if (name == "bread" && option != "")
+main: (args) -> int = {
+    user_stats: UserStatistics = ("./local_files/users.txt");
+    
+    result := validate_input(args);
+
+    occurences := 0;
+    users := user_stats.load_users();
+    logins := std::ranges::views::split(users, std::string(delimiter));
+    if (result)
     {
-        write_file("");
-        std::cout << "Successfully deleted all users." << std::endl;
+        // Case delete is set starts from here.
+
+        name := result*.first;
+        option := result*.second;
+
+        if (name == bread_key && option != "")
+        {
+            user_stats.write_file(std::string(clear_file));
+            std::cout << "Successfully deleted all users." << std::endl;
+            return 0;
+        }
+
+        for logins do (delimited_part)
+        {
+            uname := std::string(delimited_part.begin(), delimited_part.end()); 
+            if (uname == name) {occurences += 1;}
+        }
+
+        if (occurences == 0) 
+        {
+            std::cout << "Nothing to delete, user not found." << std::endl; 
+            return 0;
+        }
+
+        new_users: std::string = ();
+        for logins do (delimited_part)
+        {
+            uname := std::string(delimited_part.begin(), delimited_part.end()); 
+            if (uname != name) {new_users += uname + std::string(delimiter);}
+        }
+
+        user_stats.write_file(new_users);
+        std::cout << "Successfully deleted user." << std::endl;
         return 0;
     }
 
-    delimiter: std::string_view = (",");
-    logins := std::ranges::views::split(users, delimiter);
-    occurences: int = 0;
-
+    // Case when delete not set starts from here.
+    
+    name := std::string(args.argv[1]);
     for logins do (delimited_part)
     {
         uname := std::string(delimited_part.begin(), delimited_part.end()); 
         if (uname == name) {occurences += 1;}
     }
 
-    if (occurences == 0 && option != "") 
-    {
-        std::cout << "Nothing to delete, user not found." << std::endl; 
-        return 0;
-    }
-
     if (occurences == 0)
     {
         std::cout << "Welcome, " << name << "!" << std::endl;
-        _ : int = save_user(name);
-        return 0;
-    }
-    
-    if (option != "")
-    {
-        new_users: std::string = ();
-        for logins do (delimited_part)
-        {
-            uname := std::string(delimited_part.begin(), delimited_part.end()); 
-            if (uname != name) {new_users += uname + ",";}
-        }
-
-        write_file(new_users);
-        std::cout << "Successfully deleted user." << std::endl;
+        _ : int = user_stats.save_user(name);
         return 0;
     }
 
     std::cout << "Hello again(x" << occurences + 1 << "), " << name << std::endl;
-    _ : int = save_user(name);
+    _ : int = user_stats.save_user(name);
 
     return 0;
 }
