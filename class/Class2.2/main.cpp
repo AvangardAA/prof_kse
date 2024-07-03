@@ -15,9 +15,16 @@ using image = std::vector<pixel_vector>;
 constexpr std::string_view delimiter_pixel(" ");
 constexpr std::string_view delimiter_pixel_int(",");
 
-constexpr pixel red = std::make_tuple(255,0,0);
-constexpr pixel green = std::make_tuple(0,255,0);
-constexpr pixel blue = std::make_tuple(0,0,255);
+constexpr std::string_view image_path("./local_files/");
+constexpr std::string_view f_ext(".txt");
+
+constexpr std::string_view red("red");
+constexpr std::string_view green("green");
+constexpr std::string_view blue("blue");
+
+constexpr pixel red_pxl = std::make_tuple(255,0,0);
+constexpr pixel green_pxl = std::make_tuple(0,255,0);
+constexpr pixel blue_pxl = std::make_tuple(0,0,255);
 
 auto get_pixel(const std::string& pixel_str) -> pixel
 {
@@ -84,44 +91,45 @@ auto load_image(const std::string& filename) -> image
     catch (...) {throw;}
 }
 
+auto check_input(char* argv[]) -> void 
+{
+    std::string input = std::string(argv[1]);
+    std::string output = std::string(argv[3]);
+    
+    if (!input.contains(std::string(f_ext)) || !output.contains(std::string(f_ext)))
+    {
+        std::println("Please include {} file extension.", std::string(f_ext));
+        exit(1);
+    }
+
+    std::string color = std::string(argv[2]);
+    if (color != std::string(red) && color != std::string(green) && color != std::string(blue))
+    {
+        std::println("Invalid color, pick only red/green/blue.");
+        exit(1);
+    }
+};
+
 auto main(int argc, char* argv[]) -> int
 {
     if (argc != 4) 
     {
         std::println("Error on launch. \nUse format:  " \
             "./main <input_file_name> <color: red/green/blue> <output_file_name>\n" \
-            "And please include .txt in file name");
+            "And please include {} in file name", std::string(f_ext));
         return 1;
     }
 
-    auto check_input = [argv]() -> void {
-        std::string input = std::string(argv[1]);
-        std::string output = std::string(argv[3]);
-        
-        if (!input.contains(".txt") || !output.contains(".txt"))
-        {
-            std::println("Please include .txt file extension.");
-            exit(1);
-        }
-
-        std::string color = std::string(argv[2]);
-        if (color != "red" && color != "green" && color != "blue")
-        {
-            std::println("Invalid color, pick only red/green/blue.");
-            exit(1);
-        }
-    };
-
-    check_input();
+    check_input(argv);
 
     try
     {
-        image img = load_image(std::format("./local_files/{}", argv[1]));
+        image img = load_image(std::format("{}{}", std::string(image_path), argv[1]));
         pixel fav;
         std::string color = std::string(argv[2]);
-        if (color == "red") {fav = red;}
-        if (color == "green") {fav = green;}
-        if (color == "blue") {fav = blue;}
+        if (color == std::string(red)) {fav = red_pxl;}
+        if (color == std::string(green)) {fav = green_pxl;}
+        if (color == std::string(blue)) {fav = blue_pxl;}
 
         for (size_t y = 0; y < img.size(); ++y) 
         {
@@ -137,7 +145,7 @@ auto main(int argc, char* argv[]) -> int
             }
         }
 
-        std::ofstream file_o(std::format("./build/{}", argv[3]));
+        std::ofstream file_o(std::format("{}{}", std::string(image_path), argv[3]));
         std::string line;
         for (const auto& pxl_vec : img)
         {
@@ -151,7 +159,7 @@ auto main(int argc, char* argv[]) -> int
         }
         file_o.close();
 
-        std::println("Color schema was successfuly written in ./local_files/{}", argv[3]);
+        std::println("Color schema was successfuly written in {}{}", std::string(image_path), argv[3]);
     }
     catch (std::exception& exc) {std::println("{}", exc.what()); return 1;}
     return 0;
