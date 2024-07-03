@@ -1,8 +1,10 @@
 #include <print>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <ranges>
 #include <optional>
+#include <map>
 
 using name_option = std::pair<std::string, std::string>;
 
@@ -13,44 +15,57 @@ constexpr std::string_view clear_file("");
 
 struct UserStatistics 
 {
-    UserStatistics(const std::string& fname) : filename(fname) {}
+    UserStatistics(const std::string& fname) : filename(fname) {
+        load_users();
+    }
 
     std::string filename{};
+    std::map<std::string, int> users_log{};
 
-    auto load_users() -> std::string;
+    auto map_to_log() -> std::string;
+
+    auto load_users() -> void;
     auto save_user(const std::string& name) -> void;
     auto write_file(const std::string& content) -> void;
     auto count_logins(const std::string name) -> int;
 };
 
-auto UserStatistics::load_users() -> std::string 
+auto UserStatistics::map_to_log() -> std::string
+{
+    std::stringstream ss;
+    for (const auto& entry : users_log)
+    {
+        for (int i = 0; i < entry.second; i++)
+        {
+            ss << entry.first << std::string(delimiter);
+        }
+    }
+
+    return ss.str();
+}
+
+auto UserStatistics::load_users() -> void
 {
     std::string users{};
     std::ifstream file(filename);
-    if (!file.is_open()) { return users; }
-    
+    if (!file.is_open()) { return; }
+
     file >> users;
     file.close();
 
-    return users;
+    std::stringstream ss(users);
+    std::string name;
+    while (std::getline(ss, name, ','))
+    {
+        users_log[name]++;
+    }
+    return;
 }
 
 auto UserStatistics::save_user(const std::string& name) -> void 
 {
-    std::ifstream file(filename);
-    if (!file.is_open()) 
-    { 
-        write_file(name + std::string(delimiter));
-        return;
-    }
-    
-    std::string users_line;
-    std::getline(file, users_line);
-    file.close();
-
-    users_line += name + std::string(delimiter);
-    write_file(users_line);
-
+    users_log[name]++;
+    write_file(map_to_log());
     return;
 }
 
@@ -59,6 +74,7 @@ auto UserStatistics::write_file(const std::string& content) -> void
     std::ofstream file_o(filename);
     file_o << content;
     file_o.close();
+    return;
 }
 
 auto validate_input(int argc, char* argv[]) -> std::optional<name_option>
@@ -87,13 +103,11 @@ auto validate_input(int argc, char* argv[]) -> std::optional<name_option>
 
 auto main(int argc, char* argv[]) -> int
 {
-    UserStatistics user_stats("./local_files/users.txt");
-    
+    constexpr std::string_view fname("./local_files/users.txt");
+    UserStatistics user_stats((std::string(fname)));
+
     auto result = validate_input(argc, argv);
 
-    int occurences{};
-    std::string users = user_stats.load_users();
-    auto logins = std::ranges::views::split(users, delimiter);
     if (result)
     {   
         // Case delete is set starts from here.
@@ -106,26 +120,15 @@ auto main(int argc, char* argv[]) -> int
             return 0;
         }
 
-        for (const auto& delimited_part : logins) 
-        {
-            std::string uname = std::string(delimited_part.begin(), delimited_part.end()); 
-            if (uname == name) {occurences += 1;}
-        }
-
-        if (occurences == 0) 
+        if (user_stats.users_log[name] == 0) 
         {
             std::println("Nothing to delete, user not found."); 
             return 0;
         }
 
-        std::string new_users;
-        for (const auto& delimited_part : logins) 
-        {
-            std::string uname = std::string(delimited_part.begin(), delimited_part.end()); 
-            if (uname != name) {new_users += uname + std::string(delimiter);}
-        }
+        user_stats.users_log.erase(name);
 
-        user_stats.write_file(new_users);
+        user_stats.write_file(user_stats.map_to_log());
         std::println("Successfully deleted user.");
         return 0;
     }
@@ -133,12 +136,7 @@ auto main(int argc, char* argv[]) -> int
     // Case when delete not set starts from here.
 
     std::string name = std::string(argv[1]);
-    for (const auto& delimited_part : logins) 
-    {
-        std::string uname = std::string(delimited_part.begin(), delimited_part.end()); 
-        if (uname == name) {occurences += 1;}
-    }
-
+    int occurences = user_stats.users_log[name];
     if (occurences == 0)
     {
         std::println("Welcome, {}!", name);
