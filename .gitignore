@@ -1,2 +1,4 @@
 **/build/
-**/local_files/
+**/local_files/*
+!**/local_files/
+!**/local_files/tests/
