@@ -1,157 +1,196 @@
-#include <cstddef>
-#include <exception>
-#include <fstream>
-#include <print>
-#include <stdexcept>
-#include <string_view>
-#include <tuple>
-#include <vector>
-#include <string>
-#include <ranges>
-using pixel = std::tuple<int,int,int>;
-using pixel_vector = std::vector<pixel>;
-using image = std::vector<pixel_vector>;
+pixel: type == std::tuple<int,int,int>;
+pixel_vector: type == std::vector<pixel>;
+image: type == std::vector<pixel_vector>;
 
-constexpr std::string_view delimiter_pixel(" ") = ();
-constexpr std::string_view delimiter_pixel_int(",");
+delimiter_pixel: std::string_view == (" ");
+delimiter_pixel_int: std::string_view == (",");
 
-constexpr pixel red = std::make_tuple(255,0,0);
-constexpr pixel green = std::make_tuple(0,255,0);
-constexpr pixel blue = std::make_tuple(0,0,255);
+image_path: std::string_view == ("./local_files/");
+f_ext: std::string_view == (".txt");
 
-auto get_pixel(const std::string& pixel_str) -> pixel
-{
-    try
+red: std::string_view == ("red");
+green: std::string_view == ("green");
+blue: std::string_view == ("blue");
+
+red_pxl: pixel == (std::make_tuple(255,0,0));
+green_pxl: pixel  == (std::make_tuple(0,255,0));
+blue_pxl: pixel  == (std::make_tuple(0,0,255));
+
+get_pixel: (pixel_str: std::string) -> pixel = {
+    pixel_ints := std::ranges::views::split(pixel_str, delimiter_pixel_int);
+    rgb: std::vector<int> = ();
+    for pixel_ints do (pix_int)
     {
-        auto pixel_ints = std::ranges::views::split(pixel_str, delimiter_pixel_int);
-        std::vector<int> rgb;
-        for (const auto& pix_int : pixel_ints)
-        {
-            rgb.push_back(std::stoi(std::string(pix_int.begin(), pix_int.end())));
-        }
-
-        if (rgb.size() != 3) {throw std::invalid_argument("Incorrect input of pixel");}
-        
-        return std::make_tuple(rgb[0], rgb[1], rgb[2]);
+        rgb.push_back(std::stoi(std::string(pix_int.begin(), pix_int.end())));
     }
-    catch (...) {throw std::logic_error("Error on pixel serialization");}
+
+    if (rgb.size() != 3) 
+    {
+        std::cout << "Incorrect input of pixel" << std::endl;
+        exit(1);
+    }
+    
+    return std::make_tuple(rgb[0], rgb[1], rgb[2]);
 }
 
-auto get_pixel_vector(const std::string& pixel_vec_str) -> pixel_vector
-{
-    try
+get_pixel_vector: (pixel_vec_str: std::string) -> pixel_vector = {
+    pix_vec: pixel_vector = ();
+
+    pixels := std::ranges::views::split(pixel_vec_str, delimiter_pixel);
+    for pixels do (pxl)
     {
-        pixel_vector pix_vec;
-
-        auto pixels = std::ranges::views::split(pixel_vec_str, delimiter_pixel);
-        for (const auto& pixel : pixels)
-        {
-            std::string pixel_str = std::string(pixel.begin(), pixel.end());
-            pix_vec.push_back(get_pixel(pixel_str));
-        }
-
-        return pix_vec;
+        pixel_str := std::string(pxl.begin(), pxl.end());
+        pix_vec.push_back(get_pixel(pixel_str));
     }
-    catch (...) {throw;}
+
+    return pix_vec;
 }
 
-auto load_image(const std::string& filename) -> image
-{
-    try
+load_image: (filename: std::string) -> image = {
+    file: std::ifstream = (filename);
+    if (!file.is_open()) 
     {
-        std::ifstream file(filename);
-        if (!file.is_open()) {throw std::invalid_argument("File cant be opened.");}
-
-        int lcount = std::count(
-            std::istreambuf_iterator<char>(file),
-            std::istreambuf_iterator<char>(), '\n') + 1;
-
-        if (lcount != 16) {throw std::logic_error("Invalid number of lines.");}
-
-        file.seekg(0, std::ios::beg);
-
-        image img;
-        std::string pixel_vec_str;
-        for (size_t i = 0; i < 16; i++)
-        {
-            std::getline(file, pixel_vec_str);
-            if (pixel_vec_str == "") {throw std::invalid_argument("Error empty line found.");}
-            img.push_back(get_pixel_vector(pixel_vec_str));
-        }
-
-        return img;
+        std::cout << "File cant be opened." << std::endl;
+        exit(1);
     }
-    catch (...) {throw;}
+
+    lcount := 0;
+    line: std::string = ();
+
+    while std::getline(file, line)
+    {
+        lcount++;
+    }
+
+    if (lcount != 16) 
+    {
+        std::cout << "Invalid number of lines." << std::endl;
+        exit(1);
+    }
+
+    file.clear();
+    file.seekg(0, std::ios::beg);
+
+    img: image = ();
+    pixel_vec_str: std::string = ();
+    (copy i:= 0)
+    while i < 16
+    next i++
+    {
+        std::getline(file, pixel_vec_str);
+        if (pixel_vec_str == "") 
+        {
+            std::cout << "Error empty line found." << std::endl;
+            exit(1);
+        }
+        img.push_back(get_pixel_vector(pixel_vec_str));
+    }
+
+    return img;
 }
 
-check_input: (args) -> void {
+check_input: (args) -> void = {
     input := std::string(args.argv[1]);
     output := std::string(args.argv[3]);
     
-    if (!input.contains(".txt") || !output.contains(".txt"))
+    file_ext := std::string(f_ext);
+    inp_check := std::search(input.begin(), input.end(), file_ext.begin(), file_ext.end());
+    out_check := std::search(output.begin(), output.end(), file_ext.begin(), file_ext.end());
+    if (inp_check == input.end() || out_check == output.end())
     {
-        std::println("Please include .txt file extension.");
+        std::cout << std::format("Please include {} file extension.", std::string(f_ext)) << std::endl;
         exit(1);
     }
 
     color := std::string(args.argv[2]);
-    if (color != "red" && color != "green" && color != "blue")
+    if (color != std::string(red) && color != std::string(green) && color != std::string(blue))
     {
-        std::println("Invalid color, pick only red/green/blue.");
+        std::cout << "Invalid color, pick only red/green/blue." << std::endl;
         exit(1);
     }
-};
+
+    if (args.argc == 5)
+    {
+        unfav_color := std::string(args.argv[4]);
+        if (unfav_color != std::string(red) && unfav_color != std::string(green) && unfav_color != std::string(blue))
+        {
+            std::cout << "Invalid unfav color, pick only red/green/blue." << std::endl;
+            exit(1);
+        }
+
+        if (unfav_color == color)
+        {
+            std::cout << "Please choose different colors." << std::endl;
+            exit(1);
+        }
+    }
+}
 
 main: (args) -> int = {
-    if (args.argc != 4) 
+    if (args.argc < 4 || args.argc > 5) 
     {
-        std::cout << "Error on launch. \nUse format:  " \
-            "./main <input_file_name> <color: red/green/blue> <output_file_name>\n" \
-            "And please include .txt in file name" << std::endl;
+        std::cout << "Error on launch.\nUse format: ./main <input_file_name> <color: red/green/blue> <output_file_name> <unfav color>" << std::endl;
+        std::cout << std::format("And please include {} in file name", std::string(f_ext)) << std::endl;
         return 1;
     }
 
     check_input(args);
 
-    try
+    img := load_image(std::format("{}{}", std::string(image_path), args.argv[1]));
+    fav: pixel = ();
+    unfav : pixel = ();
+    color := std::string(args.argv[2]);
+    if (color == std::string(red)) {fav = red_pxl;}
+    if (color == std::string(green)) {fav = green_pxl;}
+    if (color == std::string(blue)) {fav = blue_pxl;}
+
+    if (args.argc == 5)
     {
-        image img = load_image(std::format("./local_files/{}", args.argv[1]));
-        pixel fav;
-        std::string color = std::string(argv[2]);
-        if (color == "red") {fav = red;}
-        if (color == "green") {fav = green;}
-        if (color == "blue") {fav = blue;}
-
-        for (size_t y = 0; y < img.size(); ++y) 
-        {
-            for (size_t x = 0; x < img[y].size(); ++x) 
-            {
-                if (img[y][x] == fav) 
-                {
-                    if (y > 0) img[y - 1][x] = fav;
-                    if (x > 0) img[y][x - 1] = fav;
-
-                    if (y == 0 && x == 0) { continue;}
-                }
-            }
-        }
-
-        std::ofstream file_o(std::format("./build/{}", argv[3]));
-        std::string line;
-        for (const auto& pxl_vec : img)
-        {
-            for (const auto& pxl : pxl_vec)
-            {
-                auto [r, g, b] = pxl;
-                line += std::format("{},{},{} ", r, g, b);
-            }
-            file_o << line << "\n";
-            line = "";
-        }
-        file_o.close();
-
-        std::println("Color schema was successfuly written in ./local_files/{}", argv[3]);
+        unfav_color := std::string(args.argv[4]);
+        if (unfav_color == std::string(red)) {unfav = red_pxl;}
+        if (unfav_color == std::string(green)) {unfav = green_pxl;}
+        if (unfav_color == std::string(blue)) {unfav = blue_pxl;}
     }
-    catch (std::exception& exc) {std::println("{}", exc.what()); return 1;}
+    
+    (copy y:= 0)
+    while y < img.ssize()
+    next y++
+    {
+        (copy x:= 0)
+        while x < img[y].ssize()
+        next x++
+        {
+            if (img[y][x] == fav)
+            {
+                if (y > 0) {img[y - 1][x] = fav;}
+                if (x > 0) {img[y][x - 1] = fav;}
+
+                if (y == 0 && x == 0) { continue;}
+            }
+
+            if (args.argc == 5)
+            {
+                if (img[y][x] == unfav) {img[y][x] = fav;}
+            }
+        }
+    }
+
+    file_o: std::ofstream = (std::format("{}{}", std::string(image_path), args.argv[3]));
+    line: std::string = ();
+    for img do (pxl_vec)
+    {
+        for pxl_vec do (pxl)
+        {
+            r := std::get<0>(pxl);
+            g := std::get<1>(pxl);
+            b := std::get<2>(pxl);
+            line += std::format("{},{},{} ", r, g, b);
+        }
+        file_o << line << "\n";
+        line = "";
+    }
+    file_o.close();
+
+    std::cout << std::format("Color schema was successfuly written in {}{}", std::string(image_path), args.argv[3]) << std::endl;
     return 0;
-}   
+}
