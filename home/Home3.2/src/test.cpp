@@ -96,5 +96,17 @@ auto main() -> int
         ASSERT_EQ(std::get<2>(result), 100)
     });
 
+    testSuite.addTest("Invalid side for height",
+    [](){
+        // Build:
+        Triangle triangle(3,4,5);
+        
+        // Operate:
+        auto result = triangle.get_height("hx");
+        
+        // Check:
+        ASSERT_EQ(result, 0)
+    });
+
     testSuite.run();
 }

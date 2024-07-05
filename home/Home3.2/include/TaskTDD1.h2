@@ -3,6 +3,10 @@ Triangle: type = {
     b: int = ();
     c: int = ();
 
+    h_a: std::string_view == "h_a";
+    h_b: std::string_view == "h_b";
+    h_c: std::string_view == "h_c"; 
+
     operator=: (out this, a_: int, b_: int, c_: int) = {
         this.a = a_;
         this.b = b_;
@@ -14,5 +18,12 @@ Triangle: type = {
 
         s: double = (a + b + c) / 2.0;
         return std::sqrt(s * (s - a) * (s - b) * (s - c));
+    }
+
+    get_height: (this, h_side: std::string) -> double = {
+        if (h_side != std::string(h_a) || h_side != std::string(h_b) || h_side != std::string(h_c))
+        {
+            return 0;
+        }
     }
 }
