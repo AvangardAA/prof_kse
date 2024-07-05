@@ -3,7 +3,7 @@
 - from ./Home3.1/
 
 - ```cd include && cppfront Helpers.h2```
-- ```cd .. ``
+- ```cd .. ```
 ```
 clang++ -std=c++20 src/test.cpp -Iinclude -I<YOUR_CPPFRONT_INCLUDE_DIR> -o test
 ```
