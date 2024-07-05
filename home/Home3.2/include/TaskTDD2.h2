@@ -1,0 +1,20 @@
+color: type == std::tuple<uint8_t, uint8_t, uint8_t>;
+
+RGB: type = {
+    r: uint8_t = ();
+    g: uint8_t = ();
+    b: uint8_t = ();
+
+    operator=: (out this, red: uint8_t, green: uint8_t, blue: uint8_t) = {
+        this.r = red;
+        this.g = green;
+        this.b = blue;
+    }
+
+    get_magic_color: (this) -> color = {
+        if ((r / 2) - 1 < 0) {return std::make_tuple(0,0,0);}
+        if ((g * 2) - 2 > 255) {return std::make_tuple(0,0,0);}
+
+        return std::make_tuple((r / 2) - 1, (g * 2) - 2, b);
+    }
+}
