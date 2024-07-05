@@ -108,5 +108,17 @@ auto main() -> int
         ASSERT_EQ(result, 0)
     });
 
+    testSuite.addTest("Invalid height",
+    [](){
+        // Build:
+        Triangle triangle(3,4,5);
+        
+        // Operate:
+        auto result = triangle.get_height("h_a");
+        
+        // Check:
+        ASSERT_EQ(result, 0)
+    });
+
     testSuite.run();
 }
