@@ -24,7 +24,6 @@ Triangle: type = {
         if (h_side == std::string(h_a) || h_side == std::string(h_b) || h_side == std::string(h_c))
         {
             area := get_area();
-            std::cout << area;
 
             if (h_side == std::string(h_a))
             {

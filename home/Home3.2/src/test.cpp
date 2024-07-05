@@ -117,7 +117,59 @@ auto main() -> int
         auto result = triangle.get_height("h_a");
         
         // Check:
-        ASSERT_EQ(result, 0)
+        ASSERT_EQ(result, 4)
+    });
+
+    testSuite.addTest("Triangle not right",
+    [](){
+        // Build:
+        Triangle triangle(3,3,5);
+        
+        // Operate:
+        auto result = triangle.get_height("h_a");
+        
+        double verify = 2.76384;
+        constexpr double eps = 1e-4;
+
+        if (std::is_same<decltype(result), double>::value == std::is_same<decltype(verify), double>::value)
+        {
+            if (std::abs(result - verify) > eps)
+            {
+                std::string res2 = "";
+                ASSERT_EQ(res2, "see code @ line 104, explanation there")
+            }
+
+            else
+            {
+                ASSERT_EQ(1, 1)
+            }
+        }
+    });
+
+    testSuite.addTest("Another triangle not right",
+    [](){
+        // Build:
+        Triangle triangle(2,6,5);
+        
+        // Operate:
+        auto result = triangle.get_height("h_b");
+        
+        double verify = 1.56125;
+        constexpr double eps = 1e-4;
+
+        if (std::is_same<decltype(result), double>::value == std::is_same<decltype(verify), double>::value)
+        {
+            if (std::abs(result - verify) > eps)
+            {
+                std::string res2 = "";
+                ASSERT_EQ(res2, "see code @ line 104, explanation there")
+            }
+
+            else
+            {
+                ASSERT_EQ(1, 1)
+            }
+        }
     });
 
     testSuite.run();
