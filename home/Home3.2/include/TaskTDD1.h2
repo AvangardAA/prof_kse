@@ -1,0 +1,46 @@
+Triangle: type = {
+    a: int = ();
+    b: int = ();
+    c: int = ();
+
+    h_a: std::string_view == "h_a";
+    h_b: std::string_view == "h_b";
+    h_c: std::string_view == "h_c"; 
+
+    operator=: (out this, a_: int, b_: int, c_: int) = {
+        this.a = a_;
+        this.b = b_;
+        this.c = c_;
+    }
+
+    get_area: (this) -> double = {
+        if (!(a + b > c && a + c > b && b + c > a)) {return -1;}
+
+        s: double = (a + b + c) / 2.0;
+        return std::sqrt(s * (s - a) * (s - b) * (s - c));
+    }
+
+    get_height: (this, h_side: std::string) -> double = {
+        if (h_side == std::string(h_a) || h_side == std::string(h_b) || h_side == std::string(h_c))
+        {
+            area := get_area();
+
+            if (h_side == std::string(h_a))
+            {
+                return (2 * area) / a;
+            }
+
+            if (h_side == std::string(h_b))
+            {
+                return (2 * area) / b;
+            }
+
+            if (h_side == std::string(h_c))
+            {
+                return (2 * area) / c;
+            }
+        }
+
+        return 0;
+    }
+}
