@@ -1,0 +1,82 @@
+#include "Builder.h2"
+#include "Ingredient.h2"
+
+config: std::string_view == ("./local_files/inventory.txt");
+
+Menu: type = {
+    private inventory: std::vector<Ingredient> = ();
+    private builder: Builder = ();
+
+    operator=: (out this) = {
+        load_ingredients();
+        this.builder = Builder(inventory);
+    }
+
+    private load_ingredients: (this) -> void = {
+        file: std::ifstream = (std::string(config));
+        if (!file.is_open())
+        { 
+            exit(1);
+        }
+        
+        ingredient: std::string = ();
+        while std::getline(file, ingredient)
+        {
+            iss: std::istringstream = (ingredient);
+            i_name: std::string = ();
+            cost := 0;
+
+            if (std::getline(iss, i_name, ',') && (iss >> cost))
+            {
+                inventory.push_back(Ingredient(i_name, cost));
+            }
+            else
+            {
+                exit(1);
+            }
+        }
+        file.close();
+    }
+
+    input_ingredients: (this) -> void = {
+        line: std::string = ();
+        ingredient: std::string = ();
+        std::cin >> line;
+        iss: std::istringstream = (line);
+        i_ingredients: std::vector<std::string> = ();
+
+        while iss >> ingredient
+        {
+            i_ingredients.push_back(ingredient);
+        }
+
+        result := builder.build_pizza(i_ingredients);
+        std::cout << std::format("Your pizza ready and the cost is {}\nIt consists of:", result.second) << std::endl;
+
+        counter := 1;
+        for result.first do (ingredient) {std::cout << std::format("{} : {}", counter, ingredient) << std::endl; counter++;}
+    }
+
+    print_ingredients: (this) -> void = {
+        std::cout << "Available ingredients and their cost below in form <name> : <cost>" << std::endl;
+
+        for inventory do (ingredient)
+        {
+            info := ingredient.get_info();
+            std::cout << std::format("{} : {}", info.first, info.second) << std::endl;
+        }
+    }
+
+    loop: (this) -> void = {
+        while true
+        {
+            choice: std::string = ();
+            std::cout << "Proceed with: 'help' - list ingredients, 'build' - build pizza" << std::endl;
+            std::cin >> choice;
+
+            if (choice == "help") {print_ingredients();}
+            else if (choice == "build") {input_ingredients();}
+            else if (choice == "exit") {exit(1);}
+        }
+    }
+}

@@ -1,0 +1,33 @@
+#include "Ingredient.h2"
+pizza: type == std::pair<std::vector<std::string>, int>;
+
+Builder: type = {
+    private ingredients: std::vector<Ingredient> = ();
+
+    operator=: (inout this) = {}
+
+    operator=: (out this, i_ingredients: std::vector<Ingredient>) = {
+        this.ingredients = i_ingredients;
+    }
+
+    build_pizza: (this, i_list: std::vector<std::string>) -> pizza = {
+        o_pizza: pizza = ();
+    
+        for i_list do (i_name)
+        {
+            it:_ = std::find_if(ingredients.begin(), ingredients.end(), :(ingredient) = ingredient.get_info().first == i_name$);
+
+            if (it != ingredients.end()) {
+                info := it*.get_info();
+                o_pizza.first.push_back(info.first);
+                o_pizza.second += info.second;
+            } else {
+                std::cout << std::format("One of your ingredients not found: {}. Try again.", i_name) << std::endl;
+                exit(1);
+            }
+        }
+
+        if (!o_pizza.first.empty()) {return o_pizza;}
+        else {std::cout << "Something went wrong." << std::endl; exit(1);}
+    }
+}

@@ -1,0 +1,15 @@
+ingr_info: type == std::pair<std::string, int>;
+
+Ingredient: type = { 
+    name: std::string = ();
+    cost: int = ();
+
+    operator=: (out this, in that) = {}
+    
+    operator=: (out this, i_name: std::string, i_cost: std::string) = {
+        this.name = i_name;
+        this.cost = std::stoi(i_cost);
+    }
+
+    get_info: (this) -> ingr_info = std::make_pair(name, cost);
+}
