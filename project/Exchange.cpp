@@ -23,6 +23,8 @@ namespace this_coro = boost::asio::this_coro;
   boost::asio::use_awaitable_t(__FILE__, __LINE__, __PRETTY_FUNCTION__)
 #endif
 
+constexpr std::string_view missing_credentials(R"({"status":"error","reason":"missing credentials"})");
+
 // P0: Matching engine
 class MatchingEngine 
 {
@@ -44,6 +46,14 @@ public:
     {
       std::string_view res = R"({"Hello":"world"})";
       return res;
+    }
+
+    if (request == "register")
+    {
+      if (!check_existing({"login", "password"}, jv))
+      {
+        return missing_credentials;
+      }
     }
 
     else if (request == "order")
@@ -102,6 +112,19 @@ public:
 private:
   boost::asio::io_context ctx{1};
   boost::asio::signal_set signals{ctx, SIGINT, SIGTERM};
+
+  auto check_existing(std::vector<std::string> fields, boost::json::value jv) -> bool
+  {
+    for (const auto& field : fields)
+    {
+      if (jv.as_object().find(field) == jv.as_object().end())
+      {
+        return false;
+      }
+    }
+
+    return true;
+  }
 
   // AN (24/07/2024): Boost.Asio boiler for coroutines:
   // https://www.boost.org/doc/libs/1_85_0/doc/html/boost_asio/example/cpp20/coroutines/echo_server.cpp
