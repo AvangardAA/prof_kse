@@ -55,7 +55,7 @@ using book_queue = std::priority_queue<LimitOrder, std::vector<LimitOrder>, Comp
 class MatchingEngine 
 {
 public:
-    explicit MatchingEngine(std::string  inst) : instrument(std::move(inst)) {}
+    explicit MatchingEngine(std::string  inst) : instrument(std::move(inst)) { dummy_init(); }
     MatchingEngine() = delete;
 
     auto process_limit(const LimitOrder& order) -> void;
@@ -70,6 +70,7 @@ private:
     book_queue bids;
     book_queue asks;
 
+    auto dummy_init() -> void;
     auto print_books(book_queue& queue) -> void;
 
     std::string instrument;

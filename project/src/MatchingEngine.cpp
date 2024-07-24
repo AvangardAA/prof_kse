@@ -63,3 +63,21 @@ auto MatchingEngine::print_books(book_queue& queue) -> void
         temp_book.pop();
     }
 }
+
+auto MatchingEngine::dummy_init() -> void
+{
+    int id = 1;
+    double price = 50;
+    double qty = 15.00;
+    for (;;) 
+    {
+        if (id == 11) { break; }
+
+        process_limit(LimitOrder("system", id, price, qty, (id % 2 == 0 ? true : false)));
+        id % 2 == 0 ? price += id : price -= id;
+        id % 2 == 0 ? qty += id : qty -= id;
+        id++;
+    }
+
+    // print_LOB();
+}
