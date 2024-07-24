@@ -37,7 +37,7 @@ auto main() -> int
         tcp::socket socket(io_context);
         socket.connect(tcp::endpoint({}, 55555));
 
-        std::string message = R"({"method":"order"})";
+        std::string message = R"({"method":"register","login":"dummy2","password":"dummy"})";
         boost::asio::write(socket, boost::asio::buffer(message));
 
         std::array<char, 1024> buf;

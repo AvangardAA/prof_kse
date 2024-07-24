@@ -1,5 +1,6 @@
 #include <string>
 #include <print>
+#include <vector>
 
 #include <boost/asio.hpp>
 #include <boost/json.hpp>
@@ -8,6 +9,10 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/write.hpp>
+
+#include "EncryptionUtils.h"
+#include "UserUtils.h"
+#include "Namespaces.hpp"
 
 // AN (24/07/2024): Boost.Asio boiler for coroutines:
 // https://www.boost.org/doc/libs/1_85_0/doc/html/boost_asio/example/cpp20/coroutines/echo_server.cpp
@@ -22,8 +27,6 @@ namespace this_coro = boost::asio::this_coro;
 # define use_awaitable \
   boost::asio::use_awaitable_t(__FILE__, __LINE__, __PRETTY_FUNCTION__)
 #endif
-
-constexpr std::string_view missing_credentials(R"({"status":"error","reason":"missing credentials"})");
 
 // P0: Matching engine
 class MatchingEngine 
@@ -52,8 +55,25 @@ public:
     {
       if (!check_existing({"login", "password"}, jv))
       {
-        return missing_credentials;
+        return Messages::missing_credentials;
       }
+
+      std::string login = jv.at("login").as_string().c_str();
+      // TODO (AN): invalid input, empty fields
+      if (users.find(login) != users.end()) {return Messages::already_existing;}
+
+      std::string hash = EncryptionUtils().hash_string(jv.at("password").as_string().c_str());
+      std::string user_data = R"({"password":")" + hash + R"(","orders":[],"history":[]})";
+
+      users[login] = EncryptionUtils().encrypt_aes(user_data, hash);
+      
+      /* DEBUG
+      for (const auto& u : users)
+      {
+        std::println("{},{}", u.first, u.second);
+      }
+      */
+      return Messages::successfully_registered;
     }
 
     else if (request == "order")
@@ -106,12 +126,17 @@ public:
     signals.async_wait([&](auto, auto){ ctx.stop(); });
 
     co_spawn(ctx, listener(), detached);
+
+    users = user_utils.load_users();
+
     ctx.run();
   }
 
 private:
   boost::asio::io_context ctx{1};
   boost::asio::signal_set signals{ctx, SIGINT, SIGTERM};
+  CustomTypes::login_encrypted users{};
+  UserUtils user_utils;
 
   auto check_existing(std::vector<std::string> fields, boost::json::value jv) -> bool
   {
@@ -165,6 +190,8 @@ auto main() -> int
 {
   try
   {
+      if (sodium_init() < 0) { throw; }
+
       ExchangeCore exchange;
 
       exchange.run();
