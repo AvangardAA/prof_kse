@@ -47,8 +47,27 @@ public:
 
     if (request == "auth")
     {
-      std::string_view res = R"({"Hello":"world"})";
-      return res;
+      if (!check_existing({"login", "password"}, jv))
+      {
+        return Messages::missing_credentials;
+      }
+
+      std::string login = jv.at("login").as_string().c_str();
+      // TODO (AN): invalid input, empty fields
+      if (users.find(login) == users.end()) {return Messages::not_exist;}
+
+      std::string hash = EncryptionUtils().hash_string(jv.at("password").as_string().c_str());
+
+      try 
+      {
+        std::string test_pwd = EncryptionUtils().decrypt_aes(users[login], hash);
+      }
+      catch (...) 
+      {
+        return Messages::auth_failed;
+      }
+
+      return Messages::auth_success;
     }
 
     if (request == "register")
@@ -66,6 +85,7 @@ public:
       std::string user_data = R"({"password":")" + hash + R"(","orders":[],"history":[]})";
 
       users[login] = EncryptionUtils().encrypt_aes(user_data, hash);
+      user_utils.save_data(users);
       
       /* DEBUG
       for (const auto& u : users)
