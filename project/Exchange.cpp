@@ -13,6 +13,7 @@
 #include "EncryptionUtils.h"
 #include "UserUtils.h"
 #include "Namespaces.hpp"
+#include "MatchingEngine.h"
 
 // AN (24/07/2024): Boost.Asio boiler for coroutines:
 // https://www.boost.org/doc/libs/1_85_0/doc/html/boost_asio/example/cpp20/coroutines/echo_server.cpp
@@ -27,13 +28,6 @@ namespace this_coro = boost::asio::this_coro;
 # define use_awaitable \
   boost::asio::use_awaitable_t(__FILE__, __LINE__, __PRETTY_FUNCTION__)
 #endif
-
-// P0: Matching engine
-class MatchingEngine 
-{
-public:
-    int dummy{};
-};
 
 // P0: Exchange core
 class ExchangeCore 
@@ -149,6 +143,8 @@ public:
 
     users = user_utils.load_users();
 
+    init_matchings({"USD/UAH", "USD/EUR", "USD/GBP"});
+
     ctx.run();
   }
 
@@ -157,6 +153,7 @@ private:
   boost::asio::signal_set signals{ctx, SIGINT, SIGTERM};
   CustomTypes::login_encrypted users{};
   UserUtils user_utils;
+  std::vector<MatchingEngine> matchings{};
 
   auto check_existing(std::vector<std::string> fields, boost::json::value jv) -> bool
   {
@@ -169,6 +166,14 @@ private:
     }
 
     return true;
+  }
+
+  auto init_matchings(std::vector<std::string> instruments) -> void
+  {
+    for (const auto& inst : instruments)
+    {
+      matchings.push_back(MatchingEngine(inst));
+    }
   }
 
   // AN (24/07/2024): Boost.Asio boiler for coroutines:
