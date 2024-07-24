@@ -1,115 +1,151 @@
 #include <print>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <ranges>
+#include <optional>
+#include <map>
 
-auto write_file(std::string content) -> void
+using name_option = std::pair<std::string, std::string>;
+
+constexpr std::string_view delimiter(",");
+constexpr std::string_view delete_cmd("delete");
+constexpr std::string_view bread_key("bread");
+constexpr std::string_view clear_file("");
+
+struct UserStatistics 
 {
-    std::ofstream file_o("./local_files/users.txt");
-    file_o << content;
-    file_o.close();
+    UserStatistics(const std::string& fname) : filename(fname) {
+        load_users();
+    }
+
+    std::string filename{};
+    std::map<std::string, int> users_log{};
+
+    auto map_to_log() -> std::string;
+
+    auto load_users() -> void;
+    auto save_user(const std::string& name) -> void;
+    auto write_file(const std::string& content) -> void;
+    auto count_logins(const std::string name) -> int;
+};
+
+auto UserStatistics::map_to_log() -> std::string
+{
+    std::stringstream ss;
+    for (const auto& entry : users_log)
+    {
+        for (int i = 0; i < entry.second; i++)
+        {
+            ss << entry.first << std::string(delimiter);
+        }
+    }
+
+    return ss.str();
 }
 
-auto save_user(std::string name) -> void 
+auto UserStatistics::load_users() -> void
 {
-    std::ifstream file("./local_files/users.txt");
-    if (!file.is_open()) 
-    { 
-        write_file(name + ",");
-        return;
-    }
-    
-    std::string users_line;
-    std::getline(file, users_line);
+    std::string users{};
+    std::ifstream file(filename);
+    if (!file.is_open()) { return; }
+
+    file >> users;
     file.close();
 
-    users_line += name + ",";
-    write_file(users_line);
-
+    std::stringstream ss(users);
+    std::string name;
+    while (std::getline(ss, name, ','))
+    {
+        users_log[name]++;
+    }
     return;
 }
 
-auto main(int argc, char* argv[]) -> int
+auto UserStatistics::save_user(const std::string& name) -> void 
+{
+    users_log[name]++;
+    write_file(map_to_log());
+    return;
+}
+
+auto UserStatistics::write_file(const std::string& content) -> void
+{
+    std::ofstream file_o(filename);
+    file_o << content;
+    file_o.close();
+    return;
+}
+
+auto validate_input(int argc, char* argv[]) -> std::optional<name_option>
 {
     if (argc < 2 || argc > 3)
     {
         std::println("Unsupported number of args");
-        return 1;
-    }
-
-    std::string option = "";
-    if (argc == 3)
-    {
-        option = std::string(argv[2]);
-        if (option != "delete")
-        {
-            std::println("Unsupported second argument. Support only: 'delete'.");
-            return 1;
-        }
-    }
-
-    auto load_users = []() -> std::string 
-    {
-        std::string users = "";
-        std::ifstream file("./local_files/users.txt");
-        if (!file.is_open()) { return users; }
-        
-        file >> users;
-        file.close();
-
-        return users;
-    };
-
-    std::string users = load_users();
-    std::string name = argv[1];
-
-    if (name == "bread" && option != "")
-    {
-        write_file("");
-        std::println("Successfully deleted all users.")
-        return 0;
-    }
-
-    constexpr std::string_view delimiter(",");
-    auto logins = std::ranges::views::split(users, delimiter);
-    int occurences = 0;
-
-    for (const auto& delimited_part : logins) 
-    {
-        std::string uname = std::string(delimited_part.begin(), delimited_part.end()); 
-        if (uname == name) {occurences += 1;}
-    }
-
-    if (occurences == 0 && option != "") 
-    {
-        std::println("Nothing to delete, user not found."); 
-        return 0;
-    }
-
-    if (occurences == 0)
-    {
-        std::println("Welcome, {}!", name);
-        save_user(name);
-        return 0;
+        exit(1);
     }
     
-    if (option != "")
+    std::string name = std::string(argv[1]);
+    if (argc == 3)
     {
-
-        std::string new_users;
-        for (const auto& delimited_part : logins) 
+        std::string option{argv[2]};
+        if (option != delete_cmd)
         {
-            std::string uname = std::string(delimited_part.begin(), delimited_part.end()); 
-            if (uname != name) {new_users += uname + ",";}
+            std::println("Unsupported second argument. Support only: 'delete'.");
+            exit(1);
         }
 
-        write_file(new_users);
+        return name_option(name, option);
+    }
+
+    return std::nullopt;
+}
+
+auto main(int argc, char* argv[]) -> int
+{
+    constexpr std::string_view fname("./local_files/users.txt");
+    UserStatistics user_stats((std::string(fname)));
+
+    auto result = validate_input(argc, argv);
+
+    if (result)
+    {   
+        // Case delete is set starts from here.
+
+        auto [name, option] = *result;
+        if (name == bread_key && option == delete_cmd)
+        {
+            user_stats.write_file(std::string(clear_file));
+            std::println("Successfully deleted all users.");
+            return 0;
+        }
+
+        if (user_stats.users_log[name] == 0) 
+        {
+            std::println("Nothing to delete, user not found."); 
+            return 0;
+        }
+
+        user_stats.users_log.erase(name);
+
+        user_stats.write_file(user_stats.map_to_log());
         std::println("Successfully deleted user.");
         return 0;
     }
 
+    // Case when delete not set starts from here.
+
+    std::string name = std::string(argv[1]);
+    int occurences = user_stats.users_log[name];
+    if (occurences == 0)
+    {
+        std::println("Welcome, {}!", name);
+        user_stats.save_user(name);
+        return 0;
+    }
+
     std::println("Hello again(x{}), {}", occurences + 1, name);
-    save_user(name);
+    user_stats.save_user(name);
 
     return 0;
 }

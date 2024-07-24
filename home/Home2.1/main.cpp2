@@ -1,0 +1,133 @@
+name_option: type == std::pair<std::string, std::string>;
+
+delimiter: std::string_view == (",");
+delete_cmd: std::string_view == ("delete");
+bread_key: std::string_view == ("bread");
+clear_file: std::string_view == ("");
+
+UserStatistics: type = {
+    filename: std::string;
+    public users_log: std::map<std::string, int> = ();
+
+    map_to_log: (this) -> std::string = {
+        ss: std::stringstream = ();
+        for users_log do (entry)
+        {
+            (copy i:= 0)
+            while i < entry.second
+            next i++
+            {
+                ss << entry.first << std::string(delimiter);
+            }
+        }
+
+        return ss.str();
+    }
+
+    load_users: (this) -> int = {
+        users: std::string = ();
+        file: std::ifstream = (this.filename);
+        if (!file.is_open()) { return 0; }
+
+        file >> users;
+        file.close();
+        
+        ss: std::stringstream = (users);
+        name: std::string = ();
+        while std::getline(ss, name, ',')
+        {
+            users_log[name]++;
+        }
+        return 0;
+    }
+
+    write_file: (this, content: std::string) -> void = {
+        file_o: std::ofstream = (this.filename);
+        file_o << content;
+        file_o.close();
+    }
+
+    save_user: (this, name: std::string) -> int = {
+        users_log[name]++;
+        write_file(map_to_log());
+        return 0;
+    }
+
+    operator=: (out this, fname: std::string) = {
+        this.filename = fname;
+        this.load_users();
+    }
+}
+
+validate_input: (args) -> std::optional<name_option> = {
+    if (args.argc < 2 || args.argc > 3)
+    {
+        std::cout << "Unsupported number of args" << std::endl;
+        exit(1);
+    }
+
+    name: std::string = (args.argv[1]);
+    if (args.argc == 3)
+    {
+        option := std::string(args.argv[2]);
+        if (option != delete_cmd)
+        {
+            std::cout << "Unsupported second argument. Support only: 'delete'." << std::endl;
+            exit(1);
+        }
+
+        return name_option(name, option);
+    }
+
+    return std::nullopt;
+}
+
+main: (args) -> int = {
+    user_stats: UserStatistics = ("./local_files/users.txt");
+    
+    result := validate_input(args);
+
+    if (result)
+    {
+        // Case delete is set starts from here.
+
+        name := result*.first;
+        option := result*.second;
+
+        if (name == bread_key && option != "")
+        {
+            user_stats.write_file(std::string(clear_file));
+            std::cout << "Successfully deleted all users." << std::endl;
+            return 0;
+        }
+
+        if (user_stats.users_log[name] == 0) 
+        {
+            std::cout << "Nothing to delete, user not found." << std::endl; 
+            return 0;
+        }
+
+        user_stats.users_log.erase(name);
+
+        user_stats.write_file(user_stats.map_to_log());
+        std::cout << "Successfully deleted user." << std::endl;
+        return 0;
+    }
+
+    // Case when delete not set starts from here.
+    
+    name := std::string(args.argv[1]);
+    occurences := user_stats.users_log[name];
+
+    if (occurences == 0)
+    {
+        std::cout << "Welcome, " << name << "!" << std::endl;
+        _ : int = user_stats.save_user(name);
+        return 0;
+    }
+
+    std::cout << "Hello again(x" << occurences + 1 << "), " << name << std::endl;
+    _ : int = user_stats.save_user(name);
+
+    return 0;
+}
