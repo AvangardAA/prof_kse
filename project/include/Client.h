@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <print>
 #include <iostream>
@@ -20,6 +21,7 @@ public:
     static auto validate_response(const std::string_view& response) -> std::optional<bool>;
 };
 
+// P2
 class TInterfaces
 {
 public:
@@ -35,6 +37,7 @@ private:
     auto form_order() -> std::string;
 };
 
+// P0
 class Client
 {
 public:

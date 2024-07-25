@@ -1,8 +1,29 @@
 #include "ExchangeCore.h"
 #include <boost/json/src.hpp>
 
+auto ExchangeCore::debug_init_matchings(std::vector<std::string> instruments) -> void
+{
+    for (const auto& inst : instruments)
+    {
+        matchings.push_back(MatchingEngine(inst));
+    }
+}
+
+auto ExchangeCore::debug_get_matching_inst() -> std::string
+{
+    for (auto& match : matchings)
+    {
+      std::string res = match.get_instrument();
+      return res;
+    }
+
+    return std::string();
+}
+
 auto ExchangeCore::process_message(boost::json::value jv, int sock) -> std::string_view
 {
+  // AN (25/07/2024): for me personally its easier and more understandable
+  // when all logic below is here in one place, not divided to dedicated handlers somewhere else
     std::string request = jv.at("method").as_string().c_str();
 
     if (request == "auth")
@@ -13,7 +34,6 @@ auto ExchangeCore::process_message(boost::json::value jv, int sock) -> std::stri
       }
 
       std::string login = jv.at("login").as_string().c_str();
-      // TODO (AN): invalid input, empty fields
       if (users.find(login) == users.end()) {return Messages::not_exist;}
 
       std::string hash = EncryptionUtils().hash_string(jv.at("password").as_string().c_str());
@@ -39,7 +59,6 @@ auto ExchangeCore::process_message(boost::json::value jv, int sock) -> std::stri
       }
 
       std::string login = jv.at("login").as_string().c_str();
-      // TODO (AN): invalid input, empty fields
       if (users.find(login) != users.end()) {return Messages::already_existing;}
 
       std::string hash = EncryptionUtils().hash_string(jv.at("password").as_string().c_str());
@@ -213,13 +232,11 @@ awaitable<void> ExchangeCore::echo(tcp::socket socket)
             {
                 co_await async_write(socket, receive_message(boost::asio::buffer(data, n), socket_number), use_awaitable);
             }
-            // TODO (AN): malformed message
         }
     }
     catch (std::exception& e)
     {
         authorized.erase(socket_number);
-        //std::println("Exception: {}", e.what());
     }
 }
 

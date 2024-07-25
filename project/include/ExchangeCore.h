@@ -44,6 +44,9 @@ public:
 
     auto run() -> void;
 
+    auto debug_init_matchings(std::vector<std::string> instruments) -> void;
+    auto debug_get_matching_inst() -> std::string;
+
 private:
     boost::asio::io_context ctx{1};
     boost::asio::signal_set signals{ctx, SIGINT, SIGTERM};
