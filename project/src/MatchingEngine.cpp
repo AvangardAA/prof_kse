@@ -13,6 +13,8 @@ auto MatchingEngine::process_market(MarketOrder order) -> void
 
 auto MatchingEngine::match_market(MarketOrder order) -> void
 {
+    // std::println("DEBUG: {}, {}, {}, {}", order.owner, order.id, order.quantity, order.isBid);
+
     book_queue& match_book = order.isBid ? asks : bids;
 
     while (!match_book.empty() && order.quantity > 0) 
@@ -20,7 +22,7 @@ auto MatchingEngine::match_market(MarketOrder order) -> void
         LimitOrder best_ord = match_book.top();
 
         int match_qty = std::min(order.quantity, best_ord.quantity);
-        std::println("Matched market order with {}{} for quantity {} at price {}", \
+        std::println("TRADE LOG: Matched market order with {}{} for quantity {} at price {}", \
             (order.isBid ? "Ask ID " : "Bid ID "), best_ord.id, match_qty, best_ord.price);
 
         best_ord.quantity -= match_qty;
@@ -36,32 +38,41 @@ auto MatchingEngine::match_market(MarketOrder order) -> void
 
     if (order.quantity > 0)
     {
-        std::println("Unmatched quantity for market order: {}", order.quantity);
+        std::println("TRADE LOG: Unmatched quantity for market order: {}", order.quantity);
     }
 
     order.isBid ? asks : bids = match_book;
 }
 
-auto MatchingEngine::print_LOB() -> void
+auto MatchingEngine::print_LOB() -> std::string
 {
-    std::println("------- Limit Order Book for {} -------", instrument);
-    std::println("Asks:");
-    print_books(asks);
-    std::println("Bids:");
-    print_books(bids);
-    std::println("---------------------------------------");
+    std::stringstream ss;
+    ss << "------- Limit Order Book for " << instrument << " -------\n";
+    ss << "Asks:\n";
+    ss << print_books(asks);
+    ss << "Bids:\n";
+    ss << print_books(bids);
+    ss << "---------------------------------------\n";
+    return ss.str();
 }
 
-auto MatchingEngine::print_books(book_queue& queue) -> void
+auto MatchingEngine::print_books(book_queue& queue) -> std::string
 {
+    std::stringstream ss;
     book_queue temp_book = queue;
 
     while (!temp_book.empty())
     {
         LimitOrder order = temp_book.top();
-        std::println("Price: {}, Quantity: {}, Owner: {}, ID: {}, Side: {}", order.price, order.quantity, order.owner, order.id, (order.isBid ? "Bid" : "Ask"));
+        ss << "Price: " << std::setw(8) << order.price
+            << ", Quantity: " << std::setw(8) << order.quantity
+            << ", Owner: " << std::setw(10) << order.owner
+            << ", ID: " << std::setw(4) << order.id
+            << ", Side: " << (order.isBid ? "Bid" : "Ask") << "\n";
         temp_book.pop();
     }
+
+    return ss.str();
 }
 
 auto MatchingEngine::dummy_init() -> void

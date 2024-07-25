@@ -4,6 +4,8 @@
 #include <vector>
 #include <algorithm>
 #include <print>
+#include <sstream>
+#include <iomanip>
 
 class BaseOrder 
 {
@@ -64,14 +66,16 @@ public:
 
     auto match_market(MarketOrder order) -> void;
 
-    auto print_LOB() -> void;
+    auto print_LOB() -> std::string;
+
+    auto get_instrument() -> std::string { return instrument; }
 
 private:
     book_queue bids;
     book_queue asks;
 
     auto dummy_init() -> void;
-    auto print_books(book_queue& queue) -> void;
+    auto print_books(book_queue& queue) -> std::string;
 
     std::string instrument;
 };
